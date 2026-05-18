@@ -1,0 +1,87 @@
+# ---- Secrets ----
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+credentials.json
+service-account*.json
+secrets/
+
+# ---- Data (never commit data) ----
+data/raw/*
+data/processed/*
+data/external/*
+data/interim/*
+!data/**/.gitkeep
+!data/**/README.md
+*.csv
+*.parquet
+*.xlsx
+*.xls
+*.feather
+*.pkl
+*.h5
+*.db
+*.sqlite
+
+# ---- Outputs (regenerated, not stored) ----
+outputs/reports/*
+outputs/figures/*
+!outputs/**/.gitkeep
+!outputs/**/README.md
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+dist/
+build/
+.installed.cfg
+MANIFEST
+
+# ---- Testing & linting caches ----
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# ---- Virtual environments ----
+.venv/
+venv/
+env/
+ENV/
+
+# ---- Notebooks ----
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+profile_default/
+ipython_config.py
+
+# ---- IDEs ----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ---- OS ----
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ---- Logs ----
+*.log
+logs/
