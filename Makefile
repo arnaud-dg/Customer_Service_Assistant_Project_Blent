@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test test-cov lint format check clean run-notebook
+.PHONY: help install install-dev install-local test test-cov lint format check clean run-notebook run-bot
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -6,8 +6,12 @@ help:  ## Show this help
 install:  ## Install production dependencies
 	uv sync --no-dev
 
-install-dev:  ## Install all dependencies including dev
-	uv sync --all-extras
+install-dev:  ## Install dev dependencies (sans backend LLM local)
+	uv sync --extra dev
+	pre-commit install
+
+install-local:  ## Install dev + backend LLM local quantisé (torch, transformers, mistral-common)
+	uv sync --extra dev --extra local
 	pre-commit install
 
 test:  ## Run the test suite
@@ -33,3 +37,6 @@ clean:  ## Remove caches and build artifacts
 
 run-notebook:  ## Launch Jupyter Lab
 	uv run jupyter lab
+
+run-bot:  ## Lancer l'interface Streamlit du bot
+	uv run streamlit run src/app.py

@@ -12,9 +12,29 @@ dependencies = [
     "pandas>=2.2",
     "numpy>=1.26",
     "python-dotenv>=1.0",
+    # Base de données
+    "sqlalchemy>=2.0",
+    # Orchestration LLM
+    "langchain>=0.3",
+    "langchain-core>=0.3",
+    "langchain-community>=0.3",
+    "langchain-mistralai>=0.2",
+    "langgraph>=0.2",
+    # Interface
+    "streamlit>=1.39",
+    # Validation
+    "pydantic>=2.7",
 ]
 
 [project.optional-dependencies]
+# Backend LLM local quantisé (HF Transformers + accélérateurs)
+local = [
+    "torch>=2.4",
+    "transformers>=4.46",
+    "accelerate>=1.0",
+    "mistral-common>=1.5",
+    "sentencepiece>=0.2",
+]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
