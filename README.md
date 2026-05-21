@@ -105,7 +105,7 @@ Le pipeline suit trois chemins selon l'intention détectée :
 
 ```bash
 git clone https://github.com/arnaud-dg/Customer_Service_Assistant_Project_Blent.git
-cd customer-service-assistant
+cd Customer_Service_Assistant_Project_Blent
 
 # Dépendances de développement
 uv sync --extra dev
@@ -121,10 +121,31 @@ Pour le backend local (modèle quantisé, téléchargement ~15 Go) :
 uv sync --extra dev --extra local
 ```
 
+### Télécharger le modèle local en avance
+
+Le modèle (`mistralai/Ministral-3-14B-Instruct-2512`) est hébergé sur HuggingFace et soumis à acceptation de licence. Avant de le télécharger :
+
+1. Accepter les conditions sur [huggingface.co/mistralai/Ministral-3B-Instruct-2410](https://huggingface.co/mistralai/Ministral-3B-Instruct-2410)
+2. Générer un token d'accès sur [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
+3. L'ajouter dans `.env` : `HF_TOKEN=hf_...`
+
+Puis lancer le téléchargement (~15 Go) :
+
+```bash
+uv run huggingface-cli download mistralai/Ministral-3-14B-Instruct-2512
+```
+
+Le modèle est mis en cache dans `~/.cache/huggingface/hub/` et chargé automatiquement au premier appel en mode local.
+
 ## Lancer l'application
 
 ```bash
-uv run streamlit run src/app.py
+uv run streamlit run src/app.py \
+  --server.port 8501 \
+  --server.address 0.0.0.0 \
+  --server.headless true \
+  --server.enableCORS false \
+  --server.enableXsrfProtection false
 ```
 
 L'interface est accessible sur `http://localhost:8501`.
