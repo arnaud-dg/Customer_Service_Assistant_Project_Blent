@@ -11,6 +11,7 @@ def get_local_llm(model_id: str, device_map: str = "auto", max_new_tokens: int =
     HuggingFacePipeline.from_model_id utilise AutoModelForCausalLM qui ne connaît pas
     Mistral3Config — on charge le modèle explicitement puis on crée le pipeline à la main.
     """
+    import torch  # type: ignore[import-not-found]
     from langchain_huggingface import ChatHuggingFace, HuggingFacePipeline  # type: ignore[import-not-found]
     from transformers import (  # type: ignore[import-not-found]
         Mistral3ForConditionalGeneration,
@@ -21,10 +22,12 @@ def get_local_llm(model_id: str, device_map: str = "auto", max_new_tokens: int =
     hf_token = os.getenv("HF_TOKEN")
 
     tokenizer = MistralCommonBackend.from_pretrained(model_id, token=hf_token)
+    # torch_dtype=bfloat16 force la dequantisation des poids FP8 natifs du modèle,
+    # nécessaire sur les GPU sans support FP8 natif (tout sauf H100/H200).
     model = Mistral3ForConditionalGeneration.from_pretrained(
         model_id,
         device_map=device_map,
-        torch_dtype="auto",
+        torch_dtype=torch.bfloat16,
         token=hf_token,
     )
     pipe = hf_pipeline(
