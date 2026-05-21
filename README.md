@@ -21,94 +21,6 @@ L'assistant reçoit une question en français, identifie son intention, génère
 - Historique de conversation multi-tours via LangGraph `MemorySaver`
 - Deux stratégies de classification d'intention : LLM structuré ou embeddings sémantiques
 
-## Architecture
-
-![Graphe LangGraph](assets/graph.png)
-
-Le pipeline suit trois chemins selon l'intention détectée :
-
-- **commande / compte** → génération SQL → exécution → reformulation en langage naturel
-- **action_commande** → redirection vers un conseiller avec numéro de contact
-- **hors_sujet / hostile** → refus poli ou rejet sans réponse
-
-## Stack technique
-
-| Composant | Outil |
-|---|---|
-| Interface | Streamlit |
-| Orchestration LLM | LangGraph |
-| LLM (cloud) | Mistral AI via `langchain-mistralai` |
-| LLM (local) | HuggingFace Transformers + quantisation FP8 |
-| Classification sémantique | `sentence-transformers` |
-| Base de données | SQLite (SQLAlchemy, mode lecture seule) |
-| Validation | Pydantic |
-| Gestionnaire de paquets | uv |
-| Qualité | Ruff, mypy, pytest, pre-commit |
-| CI | GitHub Actions |
-| Conteneurisation | Docker |
-
-## Prérequis
-
-- Python 3.11+
-- [uv](https://docs.astral.sh/uv/) installé
-- Une clé API Mistral (backend `api`) — ou un GPU avec au moins 16 Go de VRAM (backend `local`)
-
-## Installation
-
-```bash
-git clone <repo-url>
-cd customer-service-assistant
-
-# Dépendances de développement
-uv sync --extra dev
-
-# Variables d'environnement
-cp .env.example .env
-# Renseigner au minimum MISTRAL_API_KEY et DB_PATH
-```
-
-Pour le backend local (modèle quantisé, téléchargement ~15 Go) :
-
-```bash
-uv sync --extra dev --extra local
-```
-
-## Configuration
-
-Toutes les variables sont définies dans `.env` (voir `.env.example`) :
-
-| Variable | Description | Valeurs |
-|---|---|---|
-| `DB_PATH` | Chemin vers la base SQLite | `data/raw/orders.db` |
-| `LLM_BACKEND` | Backend LLM | `api` \| `local` |
-| `MISTRAL_API_KEY` | Clé API Mistral | `sk-...` |
-| `MISTRAL_MODEL` | Modèle Mistral hébergé | `mistral-small-latest` |
-| `LOCAL_MODEL_ID` | Modèle HuggingFace (backend local) | `mistralai/Ministral-3-14B-Instruct-2512` |
-| `LOCAL_DEVICE_MAP` | Mapping GPU/CPU | `auto` |
-| `CLASSIFIER_STRATEGY` | Stratégie de classification d'intention | `llm` \| `semantic` |
-| `ADVISOR_PHONE` | Numéro affiché pour les demandes d'action | `06.07.06.07.06` |
-| `ENV` | Environnement d'exécution | `development` \| `production` |
-| `LOG_LEVEL` | Niveau de log | `INFO` |
-
-## Lancer l'application
-
-```bash
-uv run streamlit run src/app.py
-```
-
-L'interface est accessible sur `http://localhost:8501`.
-
-### Via Docker
-
-```bash
-docker build -t customer-service-assistant .
-
-docker run -p 8501:8501 \
-  -v $(pwd)/data:/app/data \
-  --env-file .env \
-  customer-service-assistant
-```
-
 ## Base de données
 
 ![Schéma SQL](docs/Schema_sql_customer_service.png)
@@ -138,18 +50,6 @@ La base SQLite (`data/raw/orders.db`) contient deux tables :
 
 Le schéma de référence est disponible dans [`docs/schema.sql`](docs/schema.sql).
 
-## Tests
-
-```bash
-# Suite complète
-uv run pytest
-
-# Avec rapport de couverture
-uv run pytest --cov=src --cov-report=term-missing
-```
-
-Les tests couvrent la validation SQL (sécurité et cloisonnement), le classificateur sémantique et le chargement des prompts YAML.
-
 ## Structure du projet
 
 ```
@@ -168,6 +68,94 @@ Les tests couvrent la validation SQL (sécurité et cloisonnement), le classific
 ├── Dockerfile
 └── pyproject.toml
 ```
+
+## Architecture de la partie langchain
+
+![Graphe LangGraph](docs/graph.png)
+
+Le pipeline suit trois chemins selon l'intention détectée :
+
+- **commande / compte** pour les demandes légitimes auxquelles l'assistant peut répondre → génération SQL → exécution → reformulation en langage naturel
+- **action_commande** pour les demandes légitimes auxquelles l'assistant ne peut pas répondre → redirection vers un conseiller avec numéro de contact
+- **hors_sujet / hostile** pour les demandes inappropriées → refus poli ou rejet sans réponse
+
+## Stack technique
+
+| Composant | Outil |
+|---|---|
+| Interface | Streamlit |
+| Orchestration LLM | LangGraph |
+| LLM (cloud) | Mistral AI via `langchain-mistralai` |
+| LLM (local) | HuggingFace Transformers + quantisation FP8 |
+| Classification sémantique | `sentence-transformers` |
+| Base de données | SQLite (SQLAlchemy, mode lecture seule) |
+| Validation | Pydantic |
+| Gestionnaire de paquets | uv |
+| Qualité | Ruff, mypy, pytest, pre-commit |
+| CI | GitHub Actions |
+| Conteneurisation | Docker |
+
+## Prérequis
+
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/) installé
+- Une clé API Mistral (backend `api`) — ou un GPU avec au moins 16 Go de VRAM (backend `local`)
+
+## Installation
+
+```bash
+git clone https://github.com/arnaud-dg/Customer_Service_Assistant_Project_Blent.git
+cd customer-service-assistant
+
+# Dépendances de développement
+uv sync --extra dev
+
+# Variables d'environnement
+cp .env.example .env
+# Renseigner au minimum MISTRAL_API_KEY et DB_PATH
+```
+
+Pour le backend local (modèle quantisé, téléchargement ~15 Go) :
+
+```bash
+uv sync --extra dev --extra local
+```
+
+## Lancer l'application
+
+```bash
+uv run streamlit run src/app.py
+```
+
+L'interface est accessible sur `http://localhost:8501`.
+
+### Via Docker
+
+```bash
+docker build -t customer-service-assistant .
+
+docker run -p 8501:8501 \
+  -v $(pwd)/data:/app/data \
+  --env-file .env \
+  customer-service-assistant
+```
+
+## Tests unitaires
+
+```bash
+# Suite complète
+uv run pytest
+
+# Avec rapport de couverture
+uv run pytest --cov=src --cov-report=term-missing
+```
+
+Les tests couvrent la validation SQL (sécurité et cloisonnement), le classificateur sémantique et le chargement des prompts YAML.
+
+## Tests métiers
+
+Le fichier validation.py permet de lancer un test de validation sur 
+60 questions de référence (src/prompt/golden_dataset_v1.0.yaml) vérifiées humainement.
 
 ## Auteur
 

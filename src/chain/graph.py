@@ -103,30 +103,41 @@ def _node_generate_sql(state: GrapheState, *, llm: BaseChatModel) -> GrapheState
 def _node_execute_sql(state: GrapheState, *, engine: Engine) -> GrapheState:
     sql = state.get("sql") or ""
 
-    # Recherche la présence de mots interdits dans la requête
+    # Toutes les gardes ci-dessous retournent rows=None : le SQL n'a pas été exécuté,
+    # ce qui déclenche la réponse courte "information non disponible" dans format_answer.
     if BLACKLIST_SQL.search(sql):
-        return {**state, "rows": [], "sql": None}
+        return {**state, "rows": None, "sql": None}
 
-    # Filtre sur le fait que la requête soit bien une SELECT
     if not sql.lstrip().lower().startswith("select"):
-        return {**state, "rows": [], "sql": None}
+        return {**state, "rows": None, "sql": None}
 
-    # Vérifie programmatiquement que le filtre user_id est présent, sans se fier au LLM.
     if ":user_id" not in sql:
-        return {**state, "rows": [], "sql": None}
+        return {**state, "rows": None, "sql": None}
 
     try:
         rows = run_select(engine, sql, {"user_id": state["user_id"]})
     except Exception:
-        rows = []
+        # None signale une erreur d'exécution (schéma manquant, colonne inexistante...)
+        # à distinguer d'un résultat vide légitime (rows = []).
+        rows = None
     return {**state, "rows": rows}
 
 # Noeud de génération de la réponse - 2ème appel du LLM
 def _node_format_answer(state: GrapheState, *, llm: BaseChatModel) -> GrapheState:
     profile = state["user_profile"]
-    rows = state.get("rows") or []
+    rows = state.get("rows")
 
-    # Assemblage du contexte
+    # rows = None → la requête SQL a échoué (table ou colonne absente du schéma).
+    # Cas déterministe : on court-circuite le LLM pour éviter toute hallucination.
+    if rows is None:
+        answer = (
+            "Je n'ai pas accès à cette information. "
+            "Pour plus de détails, n'hésitez pas à contacter notre service client."
+        )
+        new_entry = [{"question": state["question"], "sql": state.get("sql") or "", "answer": answer}]
+        return {**state, "answer": answer, "history": new_entry}
+
+    # rows = [] → requête valide mais aucun résultat correspondant
     context = (
         f"Client : {profile.get('first_name')} {profile.get('last_name')} "
         f"({profile.get('email')}).\n"

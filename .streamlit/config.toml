@@ -3,3 +3,9 @@ fileWatcherType = "none"
 
 [logger]
 level = "error"
+
+[theme]
+primaryColor = "#2D2279"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#C1E1CE"
+textColor = "#1A1A2E"

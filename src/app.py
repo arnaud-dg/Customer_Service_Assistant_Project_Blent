@@ -1,4 +1,5 @@
 from __future__ import annotations
+import dataclasses
 import uuid
 import streamlit as st
 from src.chain import build_graph, run_turn
@@ -7,23 +8,33 @@ from src.db import get_engine, get_user_by_email
 from src.llm import get_llm
 
 
-@st.cache_resource(show_spinner="Initialisation...")
-def _init_resources():
-    """Charge la configuration, le LLM et compile le graphe une fois."""
+@st.cache_resource(show_spinner=False)
+def _init_base():
+    """Charge la configuration et le moteur de base de données — sans LLM."""
     settings = load_settings()
     engine = get_engine(settings.db_path)
+    return settings, engine
+
+
+@st.cache_resource(show_spinner="Chargement du modèle...")
+def _get_graph(llm_backend: str):
+    """Charge le LLM et compile le graphe — une entrée de cache par backend."""
+    settings, engine = _init_base()
+    settings = dataclasses.replace(settings, llm_backend=llm_backend)
     llm = get_llm(settings)
-    graph = build_graph(
+    return build_graph(
         llm, engine,
         classifier_strategy=settings.classifier_strategy,
         advisor_phone=settings.advisor_phone,
     )
-    return settings, engine, graph
 
 
 def _sidebar_login(engine) -> dict | None:
     """Formulaire de connexion ou résumé du profil connecté."""
     with st.sidebar:
+        _, col, _ = st.columns([0.15, 0.7, 0.15])
+        with col:
+            st.image("assets/Logo rond assistant virtuel client.png", use_container_width=True)
         st.subheader("Identification")
 
         if "profile" not in st.session_state:
@@ -41,18 +52,26 @@ def _sidebar_login(engine) -> dict | None:
                         st.rerun()
         else:
             p = st.session_state.profile
-            st.success("Vous êtes connecté(e)")
             with st.container(border=True):
-                st.write(f"**Prénom :** {p['first_name']}")
-                st.write(f"**Nom :** {p['last_name']}")
-                st.write(f"**Email :** {p['email']}")
-                st.write(f"**Réf. client :** {p['user_id']}")
+                st.success("Vous êtes connecté(e)")
+                st.caption(f"**Prénom :** {p['first_name']}")
+                st.caption(f"**Nom :** {p['last_name']}")
+                st.caption(f"**Email :** {p['email']}")
+                st.caption(f"**Réf. client :** {p['user_id']}")
             if st.button("Se déconnecter", use_container_width=True):
                 for key in ["profile", "messages", "thread_id", "last_state"]:
                     st.session_state.pop(key, None)
                 st.rerun()
 
     return st.session_state.get("profile")
+
+def _sidebar_options() -> str:
+    """Expander Options — retourne le backend LLM sélectionné ('local' | 'api')."""
+    with st.sidebar:
+        with st.expander("Options", expanded=False):
+            use_api = st.toggle("API Mistral", value=False)
+            st.caption("Local (modèle quantisé)" if not use_api else "API Mistral hébergée")
+    return "api" if use_api else "local"
 
 
 def _sidebar_log(state: dict) -> None:
@@ -80,9 +99,23 @@ def _welcome_message(first_name: str) -> str:
 def main() -> None:
     st.set_page_config(page_title="Assistant service client", page_icon="🛒")
     st.title("Assistant service client")
+    st.markdown(
+        """
+        <style>
+        [data-testid="stMarkdownContainer"] hr {
+            margin-top: 0.25rem;
+            margin-bottom: 1.25rem;
+            border-top: 0.5px solid rgba(49, 51, 63, 0.2);
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    settings, engine, graph = _init_resources()
+    settings, engine = _init_base()
     profile = _sidebar_login(engine)
+    st.sidebar.divider()
+    llm_backend = _sidebar_options()
 
     if profile is None:
         st.info("Identifiez-vous dans la barre latérale pour commencer.")
@@ -106,6 +139,7 @@ def main() -> None:
 
         with st.chat_message("assistant"):
             with st.spinner("Recherche en cours..."):
+                graph = _get_graph(llm_backend)
                 state = run_turn(
                     graph,
                     user_id=profile["user_id"],
