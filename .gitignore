@@ -24,6 +24,10 @@ data/interim/*
 *.h5
 *.db
 *.sqlite
+# Données de démo committées explicitement
+!data/raw/orders.csv
+!data/raw/users.csv
+!data/raw/orders.db
 
 # ---- Outputs (regenerated, not stored) ----
 outputs/reports/*
