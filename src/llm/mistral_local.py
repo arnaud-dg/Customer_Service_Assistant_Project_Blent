@@ -1,4 +1,4 @@
-"""Backend LLM local : Ministral-3-14B quantisé 4-bit (NF4) - HuggingFace Transformers.
+"""Backend LLM local : Ministral-3-14B quantisé FP8 - HuggingFace Transformers.
 
 Modèle local sous la forme d'un `BaseChatModel` LangChain ; à activer lors
 du déploiement sur cloudbox virtuel.
@@ -14,7 +14,7 @@ from langchain_core.outputs import ChatGeneration, ChatResult
 from pydantic import Field, PrivateAttr
 
 class MistralLocalChat(BaseChatModel):
-    """Wrapper LangChain autour de `Mistral3ForConditionalGeneration` quantisé 4-bit NF4."""
+    """Wrapper LangChain autour de `Mistral3ForConditionalGeneration` quantisé FP8."""
 
     model_id: str = Field(...)
     device_map: str = Field(default="auto")
@@ -27,34 +27,26 @@ class MistralLocalChat(BaseChatModel):
     def model_post_init(self, __context: Any) -> None:  # noqa: D401
         """Charge le modèle et le tokenizer"""
         # Imports locaux pour ne pas exiger torch/transformers si le backend n'est pas utilisé
-        import torch  # type: ignore[import-not-found]
         from transformers import (  # type: ignore[import-not-found]
-            BitsAndBytesConfig,
+            FineGrainedFP8Config,
             Mistral3ForConditionalGeneration,
             MistralCommonBackend,
         )
 
         hf_token = os.getenv("HF_TOKEN")
-        # Quantisation 4-bit NF4 — ~7-8 Go de VRAM pour un 14B
-        quantization_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_compute_dtype=torch.bfloat16,
-            bnb_4bit_use_double_quant=True,
-            bnb_4bit_quant_type="nf4",
-        )
         # Chargement tokenizer
         self._tokenizer = MistralCommonBackend.from_pretrained(self.model_id, token=hf_token)
-        # Chargement modèle quantisé
+        # Chargement modèle FP8 natif — ~14 Go de VRAM pour un 14B
         self._model = Mistral3ForConditionalGeneration.from_pretrained(
             self.model_id,
             device_map=self.device_map,
-            quantization_config=quantization_config,
+            quantization_config=FineGrainedFP8Config(),
             token=hf_token,
         )
 
     @property
     def _llm_type(self) -> str:
-        return "mistral-local-4bit"
+        return "mistral-local-fp8"
 
     def _generate(
         self,
