@@ -1,22 +1,16 @@
-"""Backend LLM local : Ministral-3-14B quantisé FP8 via HF Transformers.
+"""Backend LLM local : Ministral-3-14B quantisé FP8 - HuggingFace Transformers.
 
-Cet adaptateur expose le modèle local sous la forme d'un `BaseChatModel`
-LangChain, ce qui permet d'utiliser exactement la même chaîne que pour
-l'API Mistral hébergée.
-
-Dépendances installées via l'extra `local` (`pip install '.[local]'`).
+Modèle local sous la forme d'un `BaseChatModel` LangChain ; à activer lors 
+du déploiempent sur cloudbox virtuel.
 """
 
 from __future__ import annotations
-
 from typing import Any
-
 from langchain_core.callbacks import CallbackManagerForLLMRun
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
 from pydantic import Field, PrivateAttr
-
 
 class MistralLocalChat(BaseChatModel):
     """Wrapper LangChain autour de `Mistral3ForConditionalGeneration` quantisé FP8."""
@@ -30,7 +24,7 @@ class MistralLocalChat(BaseChatModel):
     _tokenizer: Any = PrivateAttr(default=None)
 
     def model_post_init(self, __context: Any) -> None:  # noqa: D401
-        """Charge le modèle et le tokenizer (paresseux, une seule fois)."""
+        """Charge le modèle et le tokenizer"""
         # Imports locaux pour ne pas exiger torch/transformers si le backend n'est pas utilisé
         from transformers import (  # type: ignore[import-not-found]
             FineGrainedFP8Config,
@@ -38,7 +32,9 @@ class MistralLocalChat(BaseChatModel):
             MistralCommonBackend,
         )
 
+        # Chargement tokenizer
         self._tokenizer = MistralCommonBackend.from_pretrained(self.model_id)
+        # Chargement modèle quantizé
         self._model = Mistral3ForConditionalGeneration.from_pretrained(
             self.model_id,
             device_map=self.device_map,
@@ -81,7 +77,6 @@ class MistralLocalChat(BaseChatModel):
         text_out = self._tokenizer.decode(generated, skip_special_tokens=True)
 
         return ChatResult(generations=[ChatGeneration(message=AIMessage(content=text_out))])
-
 
 def _role_for(message: BaseMessage) -> str:
     """Mappe les types de message LangChain vers les rôles de chat HF."""

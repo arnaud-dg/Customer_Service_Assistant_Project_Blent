@@ -39,4 +39,4 @@ run-notebook:  ## Launch Jupyter Lab
 	uv run jupyter lab
 
 run-bot:  ## Lancer l'interface Streamlit du bot
-	uv run streamlit run src/app.py
+	TRANSFORMERS_VERBOSITY=error uv run streamlit run src/app.py

@@ -24,6 +24,10 @@ dependencies = [
     "streamlit>=1.39",
     # Validation
     "pydantic>=2.7",
+    # Chargement des prompts et datasets YAML
+    "pyyaml>=6.0",
+    # Embeddings pour le classifieur sémantique
+    "sentence-transformers>=3.0",
 ]
 
 [project.optional-dependencies]
