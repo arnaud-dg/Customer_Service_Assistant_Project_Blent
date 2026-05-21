@@ -3,7 +3,7 @@ import dataclasses
 import uuid
 import streamlit as st
 from src.chain import build_graph, run_turn
-from src.config import load_settings
+from src.config import Settings, load_settings
 from src.db import get_engine, get_user_by_email
 from src.llm import get_llm
 
@@ -65,12 +65,20 @@ def _sidebar_login(engine) -> dict | None:
 
     return st.session_state.get("profile")
 
-def _sidebar_options() -> str:
-    """Expander Options — retourne le backend LLM sélectionné ('local' | 'api')."""
+def _sidebar_options(settings: Settings) -> str:
+    """Expander Options — retourne le backend LLM sélectionné ('local' | 'api').
+
+    Si LLM_BACKEND=api  : toggle positionné sur API et désactivé.
+    Si LLM_BACKEND=local : toggle positionné sur Local, modifiable.
+    """
+    forced_api = settings.llm_backend == "api"
     with st.sidebar:
         with st.expander("Options", expanded=False):
-            use_api = st.toggle("API Mistral", value=False)
-            st.caption("Local (modèle quantisé)" if not use_api else "API Mistral hébergée")
+            use_api = st.toggle("API Mistral", value=forced_api, disabled=forced_api)
+            if forced_api:
+                st.caption("API Mistral hébergée (imposée par l'environnement)")
+            else:
+                st.caption("Local (modèle quantisé)" if not use_api else "API Mistral hébergée")
     return "api" if use_api else "local"
 
 
@@ -115,7 +123,7 @@ def main() -> None:
     settings, engine = _init_base()
     profile = _sidebar_login(engine)
     st.sidebar.divider()
-    llm_backend = _sidebar_options()
+    llm_backend = _sidebar_options(settings)
 
     if profile is None:
         st.info("Identifiez-vous dans la barre latérale pour commencer.")
