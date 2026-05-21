@@ -5,6 +5,7 @@ du déploiempent sur cloudbox virtuel.
 """
 
 from __future__ import annotations
+import os
 from typing import Any
 from langchain_core.callbacks import CallbackManagerForLLMRun
 from langchain_core.language_models import BaseChatModel
@@ -32,13 +33,15 @@ class MistralLocalChat(BaseChatModel):
             MistralCommonBackend,
         )
 
+        hf_token = os.getenv("HF_TOKEN")
         # Chargement tokenizer
-        self._tokenizer = MistralCommonBackend.from_pretrained(self.model_id)
+        self._tokenizer = MistralCommonBackend.from_pretrained(self.model_id, token=hf_token)
         # Chargement modèle quantizé
         self._model = Mistral3ForConditionalGeneration.from_pretrained(
             self.model_id,
             device_map=self.device_map,
             quantization_config=FineGrainedFP8Config(dequantize=True),
+            token=hf_token,
         )
 
     @property

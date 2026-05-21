@@ -36,7 +36,7 @@ local = [
     "torch>=2.4",
     "transformers>=4.46",
     "accelerate>=1.0",
-    "mistral-common>=1.5",
+    "mistral-common>=1.10",
     "sentencepiece>=0.2",
 ]
 dev = [
