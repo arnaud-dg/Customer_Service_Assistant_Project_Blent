@@ -54,7 +54,7 @@ def load_settings() -> Settings:
         llm_backend=backend,
         mistral_api_key=os.getenv("MISTRAL_API_KEY"),
         mistral_model=os.getenv("MISTRAL_MODEL", "mistral-small-latest"),
-        local_model_id=os.getenv("LOCAL_MODEL_ID", "mistralai/Ministral-3-14B-Instruct-2512"),
+        local_model_id=os.getenv("LOCAL_MODEL_ID", "mistralai/Mistral-7B-Instruct-v0.3"),
         local_device_map=os.getenv("LOCAL_DEVICE_MAP", "auto"),
         classifier_strategy=classifier,
         advisor_phone=os.getenv("ADVISOR_PHONE", "06.07.06.07.06"),
