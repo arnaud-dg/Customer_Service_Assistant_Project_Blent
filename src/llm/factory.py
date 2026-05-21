@@ -20,9 +20,9 @@ def get_llm(settings: Settings) -> BaseChatModel:
         )
 
     if settings.llm_backend == "local":
-        from src.llm.mistral_local import MistralLocalChat
+        from src.llm.mistral_local import get_local_llm
 
-        return MistralLocalChat(
+        return get_local_llm(
             model_id=settings.local_model_id,
             device_map=settings.local_device_map,
         )
